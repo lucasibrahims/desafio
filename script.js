@@ -722,8 +722,6 @@ async function mostrarBalanco() {
 balancoDoContratoBnt.addEventListener('click', async () => {
     mostrarBalanco().then(async (response) => {
         balancoDoContratoSpan.innerHTML = `Balanço do Contrato: ${response/10**18} ETH`
-        let addressNFT = await contratoNFT.a();
-        console.log(addressNFT);
     }).catch((err) => {
         console.log(err);
     })
@@ -739,7 +737,7 @@ async function darLance(_lance) {
             if(lance<=maiorLance)
             {
                 console.log(maiorLance/10**18);
-                alert("É necessário dar um lance maior que o anterior.");
+                alert(`É necessário dar um lance maior que ${maiorLance/10**18}.`);
             }
             else{
                 let call = await contratoLeilao.methods._darLance().send({from:account, value:lance});
