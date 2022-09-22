@@ -452,7 +452,7 @@ var NFTAbi = [
       "type": "function"
     }
   ];
-var NFTEndereco = "0xB67e65A8380d450bB15ec8862879a6A1ECbea004";
+var NFTEndereco = "0xEb1A7121edaeD1C5379B03C8d3065e97498ED256";
 let contratoNFT = new web3.eth.Contract(NFTAbi, NFTEndereco);
 var LeilaoAbi = [
     {
@@ -587,7 +587,7 @@ var LeilaoAbi = [
       "type": "function"
     }
   ];
-var LeilaoEndereco = "0xB273B60a1ce49314D207F7f85A17060405e73394";
+var LeilaoEndereco = "0x1b937A7846008EcE18DCE8e918DC02A9E4F32712";
 let contratoLeilao = new web3.eth.Contract(LeilaoAbi, LeilaoEndereco);
 
 var enderecoContrato = document.getElementById("endereco_contrato");
