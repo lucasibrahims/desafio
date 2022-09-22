@@ -452,7 +452,7 @@ var NFTAbi = [
       "type": "function"
     }
   ];
-var NFTEndereco = "0x045E6858436Ab6493aE334D08994A6B79535994D";
+var NFTEndereco = "0x8d0E91fc49bD726178aC720D03750b74d686e8F7";
 let contratoNFT = new web3.eth.Contract(NFTAbi, NFTEndereco);
 var LeilaoAbi = [
     {
@@ -587,7 +587,7 @@ var LeilaoAbi = [
       "type": "function"
     }
   ];
-var LeilaoEndereco = "0xAc6b5D6Ba8B22221c26FeE41aD61F7e84dAF54Ce";
+var LeilaoEndereco = "0x05f726c843B4C8a2A0052E9641d7Aed8c8e9BB51";
 let contratoLeilao = new web3.eth.Contract(LeilaoAbi, LeilaoEndereco);
 
 var enderecoContrato = document.getElementById("endereco_contrato");
@@ -605,6 +605,7 @@ var darLanceBnt = document.getElementById("dar_lance");
 var lanceInput = document.getElementById("lance_input");
 var endereco_contrato = document.getElementById("endereco_contrato");
 endereco_contrato.innerHTML = `Endereço do Contrato: <br> ${NFTEndereco}`
+var iniciado = false;
 
 async function conectar(){
     if(ethereum){
@@ -638,6 +639,8 @@ async function iniciarLeilao(_lanceInicial) {
             let lanceInicial = BigInt(_lanceInicial*10**18);
             console.log(lanceInicial);
             let call = await contratoLeilao.methods.definirLanceMinimo(lanceInicial).send({from:account});
+            if(call)
+            iniciado = true;
             return call;
         } catch(err){
             alert("Error!")
@@ -658,10 +661,17 @@ iniciarLeilaoBnt.addEventListener('click', () => {
 async function mostrarMaiorLance() {
     if(ethereum){
         try{
-            let accounts = await ethereum.request({method:'eth_requestAccounts'});
-            let account = accounts[0];
-            let call = await contratoLeilao.methods.lanceMaximo().call();
-            return call;
+            if (iniciado)
+            {
+                let accounts = await ethereum.request({method:'eth_requestAccounts'});
+                let account = accounts[0];
+                let call = await contratoLeilao.methods.lanceMaximo().call();
+                return call;
+            }
+            else {
+                alert("Leilão não iniciado!");
+            }
+
         } catch(err){
             alert('Error');
             console.log(err);
@@ -682,14 +692,18 @@ maiorLanceBnt.addEventListener('click', () => {
 async function mostrarDonoMaiorLance() {
     if(ethereum){
         try{
-            let accounts = await ethereum.request({method:'eth_requestAccounts'});
-            let account = accounts[0];
-            let call = await contratoLeilao.methods.comprador().call();
-            return call;
-        } catch(err){
-            alert('Error');
-            console.log(err);
-        }
+            if (iniciado){    
+                let accounts = await ethereum.request({method:'eth_requestAccounts'});
+                let account = accounts[0];
+                let call = await contratoLeilao.methods.comprador().call();
+                return call;
+            }else {
+                alert ("Leilão não iniciado!");
+            }} catch(err){
+                alert('Error');
+                console.log(err);
+            }
+            
     } else{
         alert('Por favor, instale a carteira');
     }
@@ -706,10 +720,15 @@ donoDoMaiorLanceBnt.addEventListener('click', () => {
 async function mostrarBalanco() {
     if(ethereum){
         try{
-            let accounts = await ethereum.request({method:'eth_requestAccounts'});
-            let account = accounts[0];
-            let call = await contratoLeilao.methods.balance().call();
-            return call;
+            if(iniciado){
+                let accounts = await ethereum.request({method:'eth_requestAccounts'});
+                let account = accounts[0];
+                let call = await contratoLeilao.methods.balance().call();
+                return call;
+            }else {
+                alert("Leilão não iniciado!")
+            }
+
         } catch(err){
             alert('Error');
             console.log(err);
@@ -722,6 +741,8 @@ async function mostrarBalanco() {
 balancoDoContratoBnt.addEventListener('click', async () => {
     mostrarBalanco().then(async (response) => {
         balancoDoContratoSpan.innerHTML = `Balanço do Contrato: ${response/10**18} ETH`
+        let addressNFT = await contratoNFT.a();
+        console.log(addressNFT);
     }).catch((err) => {
         console.log(err);
     })
@@ -730,19 +751,26 @@ balancoDoContratoBnt.addEventListener('click', async () => {
 async function darLance(_lance) {
     if(ethereum) {
         try{
-            let accounts = await ethereum.request({method:'eth_requestAccounts'});
-            let account = accounts[0];
-            let lance = _lance*10**18;
-            let maiorLance = await mostrarMaiorLance();
-            if(lance<=maiorLance)
+            if (iniciado)
             {
-                console.log(maiorLance/10**18);
-                alert(`É necessário dar um lance maior que ${maiorLance/10**18}.`);
+                let accounts = await ethereum.request({method:'eth_requestAccounts'});
+                let account = accounts[0];
+                let lance = _lance*10**18;
+                let maiorLance = await mostrarMaiorLance();
+                if(lance<=maiorLance)
+                {
+                    console.log(maiorLance/10**18);
+                    alert("É necessário dar um lance maior que o anterior.");
+                }
+                else{
+                    let call = await contratoLeilao.methods._darLance().send({from:account, value:lance});
+                    return call;
+                } 
+            }else 
+            {
+                alert("Leilão não iniciado!")
             }
-            else{
-                let call = await contratoLeilao.methods._darLance().send({from:account, value:lance});
-                return call;
-            }
+
         } catch(err){
             alert("Error!")
             console.log(err);
@@ -762,23 +790,30 @@ darLanceBnt.addEventListener('click', () => {
 async function encerrarLeilao () {
     if(ethereum) {
         try{
-            let accounts = await ethereum.request({method:'eth_requestAccounts'});
-            let account = accounts[0].toString().toLowerCase();
-            let owner = await contratoLeilao.methods.owner().call();
-            owner = owner.toString().toLowerCase();
-            let comprador = await contratoLeilao.methods.comprador().call();
-            console.log(comprador);
-            if(owner != account)
+            if (iniciado)
             {
-                alert("Só o dono do leilão pode fazer isso!")
-            }else {
-                let call = await contratoLeilao.methods.encerrarLeilao().send({from:account});
-                if(call)
+                let accounts = await ethereum.request({method:'eth_requestAccounts'});
+                let account = accounts[0].toString().toLowerCase();
+                let owner = await contratoLeilao.methods.owner().call();
+                owner = owner.toString().toLowerCase();
+                let comprador = await contratoLeilao.methods.comprador().call();
+                console.log(comprador);
+                if(owner != account)
                 {
-                    let nft = await contratoNFT.methods.createTokens(comprador).send({from:account});
-                }
-                return call;
+                    alert("Só o dono do leilão pode fazer isso!")
+                }else {
+                    let call = await contratoLeilao.methods.encerrarLeilao().send({from:account});
+                    if(call)
+                    {
+                        let nft = await contratoNFT.methods.createTokens(comprador).send({from:account});
+                        iniciado = false;
+                    }
+                    return call;
+                } 
+            }else {
+                alert("Leilão não iniciado!")
             }
+            
         } catch(err){
             alert("Error!")
             console.log(err);
