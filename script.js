@@ -1,4 +1,4 @@
-var web3 = new Web3(ethereum);;
+var web3 = new Web3(ethereum);
 var NFTAbi = [
   {
     "inputs": [],
@@ -638,20 +638,6 @@ var LeilaoAbi = [
   },
   {
     "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [],
     "name": "dono",
     "outputs": [
       {
@@ -692,6 +678,20 @@ var LeilaoAbi = [
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [],
+    "name": "inicioContrato",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -896,6 +896,20 @@ var LeilaoAbi = [
     "constant": true
   },
   {
+    "inputs": [],
+    "name": "timeMaximo",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -958,7 +972,7 @@ var LeilaoAbi = [
   },
   {
     "inputs": [],
-    "name": "balance",
+    "name": "tempoMaximo",
     "outputs": [
       {
         "internalType": "uint256",
@@ -972,7 +986,7 @@ var LeilaoAbi = [
   },
   {
     "inputs": [],
-    "name": "lanceMinimo",
+    "name": "balance",
     "outputs": [
       {
         "internalType": "uint256",
@@ -1032,6 +1046,11 @@ var LeilaoAbi = [
         "internalType": "uint256",
         "name": "lance",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_time",
+        "type": "uint256"
       }
     ],
     "name": "definirLanceMinimo",
@@ -1053,14 +1072,30 @@ var LeilaoAbi = [
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "idade",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
   }
 ];
-var NFTEndereco = "0x66a6cD6587279238eD6fF1C9461E6ea352e61894";
+const second = 1000;
+const minute = second * 60;
+const hour = minute * 60;
+const day = hour * 24;
+var NFTEndereco ="0x0f72FB71345a7077A565D908c489C8bcFC6EbE2D";
 let contratoNFT = new web3.eth.Contract(NFTAbi, NFTEndereco);
-
-var LeilaoEndereco = "0xF0F973422BB06f863b6b005CcE85C5c34E8dde87";
+var LeilaoEndereco = "0xE60AC70D06E1359227184bE1716FB15f16B7D922";
 let contratoLeilao = new web3.eth.Contract(LeilaoAbi, LeilaoEndereco);
-
 var enderecoContrato = document.getElementById("endereco_contrato");
 var conectarBnt = document.getElementById("conectar");
 var balancoDoContratoBnt = document.getElementById("ether_in_contract");
@@ -1074,14 +1109,82 @@ var iniciarLeilaoBnt = document.getElementById("iniciar_leilao");
 var encerrarLeilaoBnt = document.getElementById("encerrar_leilao");
 var darLanceBnt = document.getElementById("dar_lance");
 var lanceInput = document.getElementById("lance_input");
+var timeInput = document.getElementById("time_input");
 var endereco_contrato = document.getElementById("endereco_contrato");
-endereco_contrato.innerHTML = `Endereço do Contrato: <br> ${NFTEndereco} <br> ${LeilaoEndereco}`;
-async function getIniciado()
-{
+var setTimeBnt = document.getElementById("set_time");
+endereco_contrato.innerHTML = `Endereço do Contrato: <br> ${NFTEndereco} <br> ${LeilaoEndereco}`
+async function getIniciado(){
   return await contratoLeilao.methods._iniciado().call();
-};
+}
+async function inicio(){
+var iniciado = await contratoLeilao.methods._iniciado().call();
+var settedTime = false;
+var now = new Date;
+console.log(iniciado);
+if (!iniciado)
+{   
+    conectarBnt.style.backgroundColor = "red";
+    document.getElementById("counter").innerHTML="Leilão não iniciado!";
+
+    var hh =0;
+    var mm =0;
+    var ss =0;
+}
+if (iniciado)
+{
+    var inicioContrato = await contratoLeilao.methods.inicioContrato().call();
+    var tempoMaximo = await contratoLeilao.methods.tempoMaximo().call();
+    var fimContrato = Number(inicioContrato) + Number(tempoMaximo);
+    var fimContrato = new Date(fimContrato * 1000);
+    var tempoRestante = fimContrato.getTime() - now.getTime();
+    
+    if(tempoRestante>0){
+        setTime(tempoRestante);
+        start();
+    }
+
+    else{
+        document.getElementById("counter").innerHTML="Tempo Esgotado!";
+    }
+
+}
+}
+
+window.onload = inicio();
+async function setTime (_time) {
+    var time = Number(_time);
+        hh=Math.floor(time/hour);
+        time = time - hh * hour;
+        mm = Math.floor(time/minute);
+        time = time - mm * minute;
+        ss = Math.floor(time/second);
+    var format = "Tempo Restante: " + (hh < 10 ? '0' + hh : hh) + ":" + (mm < 10 ? '0' + mm : mm) + ":" + (ss < 10 ? '0' + ss : ss)
+    document.getElementById("counter").innerHTML=format;
+    settedTime=true;
+}
 
 
+function start(){
+    var cron = setInterval(() => {timer(); }, second);
+}
+
+function timer(){
+    
+    if(ss==0)
+    {
+        ss=60;
+        mm--;
+    }
+
+    if(mm==0)
+    {
+        mm=60;
+        hh--;
+    }
+    ss--;
+    var format = "Tempo Restante: " + (hh < 10 ? '0' + hh : hh) + ":" + (mm < 10 ? '0' + mm : mm) + ":" + (ss < 10 ? '0' + ss : ss)
+    document.getElementById("counter").innerHTML=format;
+}
 async function conectar(){
     if(ethereum){
         try{
@@ -1099,28 +1202,29 @@ async function conectar(){
     }
 }
 
-conectarBnt.addEventListener('click', ()=>{
-    conectar().then((response)=>{
-    }).catch((err)=>{
-        console.log(err);
-    });
-});
+conectarBnt.addEventListener('click', () => {
+    conectar().then((response) => {
+    }).catch((err) => {
+         console.log(err);
+     });
+    }
+)
 
-async function iniciarLeilao(_lanceInicial) {
+async function iniciarLeilao(_lanceInicial, _time) {
     if(ethereum) {
         try{
-            let iniciado = await getIniciado();
             let accounts = await ethereum.request({method:'eth_requestAccounts'});
             let account = accounts[0];
             let lanceInicial = BigInt(_lanceInicial*10**18);
             let dono = await contratoNFT.methods.owner().call();
             dono = dono.toString().toLowerCase()
+            iniciado = getIniciado();
             iniciado = true;
             if(account!=dono)
             {
                 alert("Só o dono pode iniciar o leilão!")
             }else{
-            let call = await contratoLeilao.methods.definirLanceMinimo(lanceInicial).send({from:account});
+            let call = await contratoLeilao.methods.definirLanceMinimo(lanceInicial, _time).send({from:account});
             return call;
             }
         } catch(err){
@@ -1132,17 +1236,28 @@ async function iniciarLeilao(_lanceInicial) {
     }
 
 }
+setTimeBnt.addEventListener('click', () => {
+    setTime(timeInput.value * minute);
+
+})
+
 iniciarLeilaoBnt.addEventListener('click', () => {
-    iniciarLeilao(lanceInicial.value).then((response) => {
+    if(settedTime){
+    iniciarLeilao(lanceInicial.value, timeInput.value*60).then((response) => {
+    start(); 
     }).catch((err) => {
-        console.log(err);
-    });
+         console.log(err);
+     });
+    }
+    else{
+        alert("Defina o tempo máximo do leilão!");
+    }
 })
 
 async function mostrarMaiorLance() {
     if(ethereum){
+      var iniciado = await getIniciado()
         try{
-          let iniciado = await getIniciado();
             if (iniciado)
             {
                 let call = await contratoLeilao.methods.lanceMaximo().call();
@@ -1163,7 +1278,7 @@ async function mostrarMaiorLance() {
 }
 maiorLanceBnt.addEventListener('click', () => {
     mostrarMaiorLance().then(async (response) => {
-      let iniciado = await getIniciado();
+      var iniciado = await getIniciado();
         if(iniciado)
         maiorLanceSpan.innerHTML = `O maior lance: ${response/10**18} ETH`
     }).catch((err) => {
@@ -1174,7 +1289,7 @@ maiorLanceBnt.addEventListener('click', () => {
 async function mostrarDonoMaiorLance() {
     if(ethereum){
         try{
-          let iniciado = await getIniciado();
+          var iniciado = await getIniciado();
             if (iniciado){    
                 let accounts = await ethereum.request({method:'eth_requestAccounts'});
                 let account = accounts[0];
@@ -1194,7 +1309,7 @@ async function mostrarDonoMaiorLance() {
 }
 donoDoMaiorLanceBnt.addEventListener('click', () => {
     mostrarDonoMaiorLance().then(async (response) => {
-        let iniciado = await getIniciado();
+        var iniciado = await getIniciado();
         if(iniciado)
         donoDoMaiorLanceSpan.innerHTML = `O dono do maior lance: <br>${response}`
     }).catch((err) => {
@@ -1205,7 +1320,7 @@ donoDoMaiorLanceBnt.addEventListener('click', () => {
 async function mostrarBalanco() {
     if(ethereum){
         try{
-          let iniciado = await getIniciado();
+            var iniciado = await getIniciado();
             if(iniciado){
                 let accounts = await ethereum.request({method:'eth_requestAccounts'});
                 let account = accounts[0];
@@ -1226,7 +1341,7 @@ async function mostrarBalanco() {
 }
 balancoDoContratoBnt.addEventListener('click', async () => {
     mostrarBalanco().then(async (response) => {
-        let iniciado = await getIniciado();
+        var iniciado = await getIniciado();
         if(iniciado)
         balancoDoContratoSpan.innerHTML = `Balanço do Contrato: ${response/10**18} ETH`
     }).catch((err) => {
@@ -1237,7 +1352,7 @@ balancoDoContratoBnt.addEventListener('click', async () => {
 async function darLance(_lance) {
     if(ethereum) {
         try{
-          let iniciado = await getIniciado();
+            var iniciado = await getIniciado();
             if (iniciado)
             {
                 let accounts = await ethereum.request({method:'eth_requestAccounts'});
@@ -1277,7 +1392,7 @@ darLanceBnt.addEventListener('click', () => {
 async function encerrarLeilao () {
     if(ethereum) {
         try{
-          let iniciado = await getIniciado();
+            var iniciado = await getIniciado();
             if (iniciado)
             {
                 let accounts = await ethereum.request({method:'eth_requestAccounts'});
@@ -1293,7 +1408,6 @@ async function encerrarLeilao () {
                     let call = await contratoLeilao.methods.encerrarLeilao().send({from:account});
                     if (call)
                     {
-                      let nft = await contratoNFT.methods.createTokens(comprador).send({from:account});
                     }
                     return call;
                 } 
